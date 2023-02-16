@@ -1,11 +1,14 @@
 import React from "react";
 import './header.css';
 
+import NewTaskForm from '../new-task-form'
+
 const Header = () => {
     return (
-        <div>
-
-        </div>
+        <header className="header">
+            <h1>todos</h1>
+            <NewTaskForm />
+        </header>
     )
 }
 

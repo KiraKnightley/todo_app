@@ -1,13 +1,17 @@
 import React from 'react';
+import Footer from '../footer/footer';
+import Header from '../header/header';
+import TaskList from '../task-list/task-list';
 import './app.css';
 
 
-
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      
-    </div>
+    <section className="todoapp">
+      <Header />
+      <TaskList />
+      <Footer />
+    </section>
   );
 }
 
