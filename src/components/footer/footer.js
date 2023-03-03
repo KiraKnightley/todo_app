@@ -1,15 +1,37 @@
-import React from "react";
-import './footer.css';
-import TasksFilter from "./tasks-filter/tasks-filter";
+import React from 'react';
+import PropTypes from 'prop-types';
 
-const Footer = () => {
+import TasksFilter from '../TasksFilter';
+import './Footer.css';
+
+export default class Footer extends React.PureComponent {
+  static defaultProps = {
+    activeCount: 0,
+    onToggleVisible: () => {},
+    clearCompleted: () => {},
+    onToggleSelect: () => {},
+    filter: 'all',
+  };
+
+  static propTypes = {
+    activeCount: PropTypes.number,
+    onToggleVisible: PropTypes.func,
+    clearCompleted: PropTypes.func,
+    onToggleSelect: PropTypes.func,
+    filter: PropTypes.string,
+  };
+
+  render() {
+    const { activeCount, filter, onToggleVisible, onToggleSelect, clearCompleted } = this.props;
+
     return (
-        <footer className="footer">
-            <span className="todo-count">1 items left</span>
-            <TasksFilter />
-            <button className="clear-completed">Clear completed</button>
-        </footer>
-    )
+      <footer className="footer">
+        <span className="todo-count">{activeCount} items left</span>
+        <TasksFilter filter={filter} onToggleVisible={onToggleVisible} onToggleSelect={onToggleSelect} />
+        <button type="button" className="clear-completed" onClick={clearCompleted}>
+          Clear completed
+        </button>
+      </footer>
+    );
+  }
 }
-
-export default Footer
