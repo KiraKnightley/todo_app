@@ -1,71 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 import TaskList from '../TaskList';
 import NewTaskForm from '../NewTaskForm';
 import Footer from '../Footer';
 
-export default class App extends React.Component {
-  nextId = 1;
+export default function App() {
+  const [items, setItems] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [maxId, setMaxId] = useState('1');
 
-  constructor() {
-    super();
-    this.state = {
-      items: [],
-      filter: 'all',
-    };
-  }
+  const createTodoItem = (description, timeInSec) => ({
+    description,
+    timeInSec,
+    isTimerOn: false,
+    created: Date.now(),
+    done: false,
+    editable: false,
+    id: `${maxId}`,
+  });
 
-  componentDidMount() {
-    this.updateTime();
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.interval);
-  }
-
-  onToggleDone = (id) => {
-    this.setState((state) => {
-      const items = this.toggleProperty(state.items, id, 'done');
-      return { items };
-    });
+  const toggleProperty = (arr, id, propName, value = !arr[arr.findIndex((item) => item.id === id)][propName]) => {
+    const idx = arr.findIndex((item) => item.id === id);
+    const oldItem = arr[idx];
+    const newItem = { ...oldItem, [propName]: value };
+    return [...arr.slice(0, idx), newItem, ...arr.slice(idx + 1)];
   };
 
-  getTime = (minutes, seconds) => +minutes * 60 + +seconds;
-
-  addItem = (description, minutes, seconds) => {
-    const timeInSec = this.getTime(minutes, seconds);
-    const newItem = this.createTodoItem(description, timeInSec);
-
-    this.setState(({ items }) => {
-      const newArr = [...items, newItem];
-      return {
-        items: newArr,
-      };
-    });
+  const onToggleDone = (id) => {
+    const itemsToggle = toggleProperty(items, id, 'done');
+    setItems(itemsToggle);
   };
 
-  deleteItem = (id) => {
-    this.setState(({ items }) => {
-      const idx = items.findIndex((item) => item.id === id);
-      const newArr = [...items.slice(0, idx), ...items.slice(idx + 1)];
-      return {
-        items: newArr,
-      };
-    });
+  const getTime = (minutes, seconds) => +minutes * 60 + +seconds;
+
+  const addItem = (description, minutes, seconds) => {
+    const timeInSec = getTime(minutes, seconds);
+    const newItem = createTodoItem(description, timeInSec);
+    const newArr = [...items, newItem];
+    setItems(newArr);
+    setMaxId((id) => `${+id + 1}`);
   };
 
-  onToggleVisible = (selector) => {
-    this.setState(() => ({ filter: selector }));
+  const deleteItem = (id) => {
+    const idx = items.findIndex((item) => item.id === id);
+    const newArr = [...items.slice(0, idx), ...items.slice(idx + 1)];
+    setItems(newArr);
   };
 
-  onToggleSelect = (btn) => {
-    this.setState(() => ({ filter: btn }));
-    this.onToggleVisible(btn);
+  const onToggleVisible = (selector) => {
+    setFilter(selector);
   };
 
-  showList = (visibility) => {
-    const { items } = this.state;
+  const onToggleSelect = (btn) => {
+    setFilter(btn);
+    onToggleVisible(btn);
+  };
+
+  const showList = (visibility) => {
     switch (visibility) {
       case 'all':
         return items;
@@ -76,90 +68,63 @@ export default class App extends React.Component {
     }
   };
 
-  clearCompleted = () => {
-    this.setState(({ items }) => {
-      const newArr = items.filter((item) => !item.done);
-      return {
-        items: newArr,
-      };
+  const clearCompleted = () => {
+    const newArr = items.filter((item) => !item.done);
+    setItems(newArr);
+  };
+
+  const onPlay = (id) => {
+    setItems(toggleProperty(items, id, 'isTimerOn', true));
+  };
+
+  const onPause = (id) => {
+    setItems(toggleProperty(items, id, 'isTimerOn', false));
+  };
+
+  const updateTime = () => {
+    const newArr = items.map((item) => {
+      if (item.timeInSec === 0 || item.done) {
+        return item;
+      }
+      if (item.isTimerOn) {
+        // eslint-disable-next-line no-param-reassign
+        item.timeInSec -= 1;
+      }
+      return item;
     });
+    setItems(newArr);
   };
 
-  onPlay = (id) => {
-    this.setState(({ items }) => ({ items: this.toggleProperty(items, id, 'isTimerOn', true) }));
-  };
-
-  onPause = (id) => {
-    this.setState(({ items }) => ({ items: this.toggleProperty(items, id, 'isTimerOn', false) }));
-  };
-
-  updateTime = () => {
-    this.interval = setInterval(() => {
-      this.setState(({ items }) => {
-        const newArr = items.map((item) => {
-          if (item.timeInSec === 0 || item.done) {
-            return item;
-          }
-          if (item.isTimerOn) {
-            // eslint-disable-next-line no-param-reassign
-            item.timeInSec -= 1;
-          }
-          return item;
-        });
-        return {
-          items: newArr,
-        };
-      });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateTime();
     }, 1000);
-  };
+    return () => clearInterval(interval);
+  }, [items]);
 
-  toggleProperty = (arr, id, propName, value = !arr[arr.findIndex((item) => item.id === id)][propName]) => {
-    const idx = arr.findIndex((item) => item.id === id);
-    const oldItem = arr[idx];
-    const newItem = { ...oldItem, [propName]: value };
-    return [...arr.slice(0, idx), newItem, ...arr.slice(idx + 1)];
-  };
+  const doneCount = items.filter((item) => item.done).length;
+  const activeCount = items.length - doneCount;
+  const visibleList = showList(filter);
 
-  createTodoItem(description, timeInSec) {
-    return {
-      description,
-      timeInSec,
-      isTimerOn: false,
-      created: Date.now(),
-      done: false,
-      editable: false,
-      id: `item${this.nextId++}`,
-    };
-  }
-
-  render() {
-    const { items, filter } = this.state;
-    const doneCount = items.filter((item) => item.done).length;
-    const activeCount = items.length - doneCount;
-    const visibleList = this.showList(filter);
-
-    return (
-      <section className="todoapp">
-        <NewTaskForm addItem={this.addItem} />
-
-        <section className="main">
-          <TaskList
-            items={visibleList}
-            onToggleDone={this.onToggleDone}
-            deleteItem={this.deleteItem}
-            onPlay={this.onPlay}
-            onPause={this.onPause}
-          />
-
-          <Footer
-            activeCount={activeCount}
-            filter={filter}
-            onToggleVisible={this.onToggleVisible}
-            onToggleSelect={this.onToggleSelect}
-            clearCompleted={this.clearCompleted}
-          />
-        </section>
+  return (
+    <section className="todoapp">
+      <NewTaskForm addItem={addItem} />
+      <section className="main">
+        <TaskList
+          items={visibleList}
+          onToggleDone={onToggleDone}
+          deleteItem={deleteItem}
+          onPlay={onPlay}
+          onPause={onPause}
+        />
+        <Footer
+          activeCount={activeCount}
+          filter={filter}
+          onToggleVisible={onToggleVisible}
+          onToggleSelect={onToggleSelect}
+          clearCompleted={clearCompleted}
+        />
       </section>
-    );
-  }
+    </section>
+  );
 }
